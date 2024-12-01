@@ -1,4 +1,4 @@
-import numpy as np
+from collections import defaultdict
 
 
 def load_and_sort() -> list[str]:
@@ -15,7 +15,6 @@ def part_one() -> int:
     total_distance = sum(
         abs(left - right) for left, right in zip(left_list, right_list)
     )
-
     return total_distance
 
 
@@ -29,6 +28,19 @@ def part_two() -> int:
     return total
 
 
+def part_two_fast() -> int:
+    "O(n + m)"
+    left_list, right_list = load_and_sort()
+    counts = defaultdict(lambda: 0)
+    for num in right_list:
+        counts[num] += 1
+    total = 0
+    for target in left_list:
+        total += target * counts[target]
+    return total
+
+
 if __name__ == "__main__":
     print(f"part one solution: {part_one()}")
+    assert part_two() == part_two_fast()
     print(f"part two solution: {part_two()}")
