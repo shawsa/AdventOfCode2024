@@ -16,13 +16,23 @@ def eval_mul_op(op: str) -> int:
     return args[0] * args[1]
 
 
-def part_one(memory: str) -> int:
+def eval_and_sum(memory: str) -> int:
     ops = find_mul_ops(memory)
     products = map(eval_mul_op, ops)
     total = sum(products)
     return total
 
 
+def extract_do_blocks(memory: str) -> list[str]:
+    for chunk in memory.split("do()"):
+        yield chunk.split("don't()")[0]
+
+
+def eval_and_sum_enabled(memory: str) -> int:
+    return sum(eval_and_sum(do_block) for do_block in extract_do_blocks(memory))
+
+
 if __name__ == "__main__":
     memory = load_input()
-    print(f"part one: {part_one()}")
+    print(f"part one: {eval_and_sum(memory)}")
+    print(f"part two: {eval_and_sum_enabled(memory)}")
