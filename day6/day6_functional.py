@@ -1,12 +1,13 @@
 from dataclasses import dataclass
 from enum import StrEnum
-from functools import reduce
 from itertools import product, chain
 from time import sleep
 from typing import Generator
+from tqdm import tqdm
 
 OBSTACLE = "#"
 PATH = "X"
+EMPTY = "."
 
 Coord = tuple[int]
 
@@ -76,14 +77,14 @@ class Guard:
 
     @property
     def target(self) -> Coord:
-        assert self.direction in GuardChar
-        if self.direction is GuardChar.LEFT:
+        assert self.direction in list(GuardChar)
+        if self.direction == GuardChar.LEFT:
             return self.row, self.col - 1
-        if self.direction is GuardChar.RIGHT:
+        if self.direction == GuardChar.RIGHT:
             return self.row, self.col + 1
-        if self.direction is GuardChar.UP:
+        if self.direction == GuardChar.UP:
             return self.row - 1, self.col
-        if self.direction is GuardChar.DOWN:
+        if self.direction == GuardChar.DOWN:
             return self.row + 1, self.col
 
     def turn_right(self) -> Guard:
@@ -96,6 +97,9 @@ class Guard:
             return Guard(self.row, self.col, GuardChar.RIGHT)
         if self.direction is GuardChar.DOWN:
             return Guard(self.row, self.col, GuardChar.LEFT)
+
+    def __hash__(self) -> str:
+        return hash(repr(self))
 
 
 @dataclass
@@ -168,6 +172,30 @@ def part_one(initial_state):
     return sum(1 for char in path if char == PATH)
 
 
+def will_loop(state: State) -> bool:
+    guards = set()
+    for state in state_sequence(state):
+        guard = state.guard
+        if guard in guards:
+            return True
+        guards.add(guard)
+    return False
+
+
+def obstruction_options(state: State) -> Generator[Coord, None, None]:
+    grid = state.grid.replace_at(state.guard.location, state.guard.direction)
+    for coord, char in tqdm(list(grid.enumerate())):
+        if char != EMPTY:
+            continue
+        if will_loop(State(state.grid.replace_at(coord, OBSTACLE), state.guard)):
+            yield coord
+
+
+def part_two(initial_state: State) -> int:
+    return sum(1 for _ in obstruction_options(initial_state))
+
+
 if __name__ == "__main__":
     initial_state = load_input()
-    print(f"part_one: {part_one(initial_state)}")
+    print(f"part one: {part_one(initial_state)}")
+    print(f"part two: {part_two(initial_state)}")
