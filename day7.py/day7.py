@@ -4,7 +4,7 @@ from operator import mul, add
 from typing import Callable
 
 
-Operator = Callable[[int], int]
+Operator = Callable[[int, int], int]
 
 
 @dataclass
