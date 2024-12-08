@@ -1,6 +1,8 @@
 from day8 import (
     AntennaMap,
-    part_one
+    HarmonicAntennaMap,
+    part_two,
+    part_one,
 )
 
 
@@ -20,3 +22,5 @@ test_string = """............
 
 amap = AntennaMap(test_string)
 print(part_one(amap))
+hamap = HarmonicAntennaMap(test_string)
+print(f"part two: {part_two(hamap)}")

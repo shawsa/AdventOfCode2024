@@ -1,5 +1,6 @@
 from collections import defaultdict
-from itertools import chain, product, permutations
+from itertools import chain, product, permutations, combinations, count
+from math import gcd
 from typing import Generator
 
 
@@ -75,7 +76,34 @@ def part_one(amap: AntennaMap) -> int:
     return len(amap.antinodes())
 
 
+class HarmonicAntennaMap(AntennaMap):
+    def antinodes_by_freq(self, freq: Frequency) -> Generator[Location, None, None]:
+        for loc1, loc2 in combinations(self.adict[freq], 2):
+            diff = (loc1[0] - loc2[0], loc1[1] - loc2[1])
+            factor = gcd(*diff)
+            diff = tuple(map(lambda val: val//factor, diff))
+            yield loc1
+            for index in count():
+                loc = (loc1[0] + index * diff[0], loc1[1] + index*diff[1])
+                if self.in_bounds(loc):
+                    yield loc
+                else:
+                    break
+            for index in count():
+                loc = (loc1[0] - index * diff[0], loc1[1] - index*diff[1])
+                if self.in_bounds(loc):
+                    yield loc
+                else:
+                    break
+
+
+def part_two(amap: HarmonicAntennaMap) -> int:
+    return len(amap.antinodes())
+
+
 if __name__ == "__main__":
     string = load_input()
     amap = AntennaMap(string)
     print(f"part one: {part_one(amap)}")
+    hamap = HarmonicAntennaMap(string)
+    print(f"part two: {part_two(hamap)}")
