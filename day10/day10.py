@@ -52,6 +52,7 @@ class Topography:
     def next_places(self, place: Place) -> Generator[Place, None, None]:
         def val_match(next_place: Place):
             return place.val + 1 == next_place.val
+
         return filter(val_match, self.adjacent_locs(place.loc))
 
 
@@ -108,6 +109,18 @@ def part_one(top: Topography) -> int:
     return sum(len(val) for val in heads_and_tails(top).values())
 
 
+def heads_and_ratings(top: Topography) -> dict[Place, int]:
+    ret = defaultdict(int)
+    for trail in trails_in(top):
+        ret[trail.places[0]] += 1
+    return ret
+
+
+def part_two(top: Topography) -> int:
+    return sum(1 for _ in trails_in(top))
+
+
 if __name__ == "__main__":
     top = Topography(load_input())
     print(f"part one: {part_one(top)}")
+    print(f"part two: {part_two(top)}")
