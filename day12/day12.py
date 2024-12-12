@@ -141,7 +141,104 @@ def part_one(garden: Garden) -> int:
     return sum(region.area * region.perimiter for region in garden.regions)
 
 
+# forward declaration
+class FencPiece:
+    pass
+
+
+class FencePiece:
+    def __init__(self, inside: Location, outside: Location):
+        assert inside in list(adjacent_to(outside))
+        self.inside = inside
+        self.outside = outside
+
+    def __eq__(self, fp: FencPiece) -> bool:
+        return self.inside == fp.inside and self.outside == fp.outside
+
+    def __repr__(self) -> str:
+        return f"[({self.inside.row},{self.inside.col}), ({self.outside.row},{self.outside.col})]"
+
+    @property
+    def horizontal(self) -> bool:
+        return self.inside.col == self.outside.col
+
+    def next_to(self, fp: FencPiece) -> bool:
+        if self.horizontal:
+            if abs(self.inside.col - fp.inside.col) != 1:
+                return False
+            if abs(self.outside.col - fp.outside.col) != 1:
+                return False
+            if self.inside.row != fp.inside.row:
+                return False
+            if self.outside.row != fp.outside.row:
+                return False
+            return True
+        else:
+            if abs(self.inside.row - fp.inside.row) != 1:
+                return False
+            if abs(self.outside.row - fp.outside.row) != 1:
+                return False
+            if self.inside.col != fp.inside.col:
+                return False
+            if self.outside.col != fp.outside.col:
+                return False
+            return True
+
+
+class FenceSide:
+    def __init__(self, *pieces: list[FencePiece]):
+        assert len(pieces) > 0
+        self.pieces = list(pieces)
+
+    def __repr__(self) -> str:
+        if self.pieces[0].horizontal:
+            self.pieces.sort(key=lambda piece: piece.inside.col)
+        else:
+            self.pieces.sort(key=lambda piece: piece.inside.row)
+        return "\n".join(str(piece) for piece in self.pieces)
+
+    def should_add(self, fp: FencePiece) -> bool:
+        if fp in self.pieces:
+            return False
+        return any(piece.next_to(fp) for piece in self.pieces)
+
+    def add(self, piece: FencePiece):
+        self.pieces.append(piece)
+
+    def aquire_pieces(self, pieces: list[FencePiece]):
+        def aquire_one(pieces: list[FencePiece]) -> bool:
+            for piece in pieces:
+                if self.should_add(piece):
+                    self.add(piece)
+                    pieces.remove(piece)
+                    return True
+            return False
+
+        while aquire_one(pieces):
+            pass
+
+
+def count_sides(region: Region) -> int:
+    pieces = []
+    for inside in region.locs:
+        for outside in adjacent_to(inside):
+            if outside in region:
+                continue
+            pieces.append(FencePiece(inside, outside))
+    sides = []
+    while len(pieces) > 0:
+        side = FenceSide(pieces.pop())
+        side.aquire_pieces(pieces)
+        sides.append(side)
+    return len(sides)
+
+
+def part_two(garden: Garden) -> int:
+    return sum(region.area * count_sides(region) for region in garden.regions)
+
+
 if __name__ == "__main__":
     string = load_input()
     garden = Garden(string)
     print(f"part one: {part_one(garden)}")
+    print(f"part two: {part_two(garden)}")
