@@ -75,6 +75,16 @@ def part_one(machines: list[ClawMachine]) -> int:
     return sum(machine.cost() for machine in machines)
 
 
+def part_two(machines: list[ClawMachine]) -> int:
+    offset = 10000000000000
+    fixed_machines = [
+        ClawMachine(m.a, m.b, Prize(m.prize.x + offset, m.prize.y + offset))
+        for m in machines
+    ]
+    return sum(machine.cost() for machine in fixed_machines)
+
+
 if __name__ == "__main__":
     machines = parse_machines(load_input())
     print(f"part one: {part_one(machines)}")
+    print(f"part two: {part_two(machines)}")
