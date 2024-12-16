@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from enum import Enum, StrEnum
 from itertools import pairwise
+from sortedcontainers import SortedSet
 from typing import Generator
 
 
@@ -34,6 +35,9 @@ class Vector:
 
     def __radd__(self, vec: Vector) -> Vector:
         return self + vec
+
+    def __hash__(self) -> int:
+        return hash((self.row, self.col))
 
 
 class Heading(Enum):
@@ -103,11 +107,7 @@ class Path:
             self.reindeers = (Reindeer(maze.start, Heading.EAST),)
         else:
             self.reindeers = reindeers
-
-        if self.maze.end == self.reindeers[-1].position:
-            self.score = self.calculate_score()
-        else:
-            self.score = float("inf")
+        self.score = self.calculate_score()
 
     @property
     def locations(self) -> list[Vector]:
@@ -121,6 +121,10 @@ class Path:
     @property
     def last(self) -> Reindeer:
         return self.reindeers[-1]
+
+    @property
+    def at_end(self) -> bool:
+        return self.maze.end == self.last.position
 
     def __len__(self) -> int:
         return len(self.reindeers)
@@ -162,18 +166,55 @@ class Path:
 
     @classmethod
     def all_paths(cls, maze: Maze) -> Generator[Path, None, None]:
-        def _recursive_paths(path: Path) -> Generator[Path, None, None]:
+        leaves = [Path(maze)]
+        while len(leaves) > 0:
+            path = leaves.pop()
             if path.last.position == maze.end:
                 yield path
-            else:
-                for heading in Heading:
-                    target = path.last.position + heading.value
-                    if maze[target] == Tile.WALL or target in path.locations:
-                        continue
-                    new_path = Path(maze, path.reindeers + (Reindeer(target, heading),))
-                    yield from _recursive_paths(new_path)
+                continue
+            for heading in Heading:
+                target = path.last.position + heading.value
+                if maze[target] == Tile.WALL or target in path.locations:
+                    continue
+                leaves.append(Path(maze, path.reindeers + (Reindeer(target, heading),)))
 
-        yield from _recursive_paths(Path(maze))
+    @classmethod
+    def best_path(cls, maze: Maze, verbose: bool = False) -> Path:
+        best = None
+        score = float("inf")
+        start_path = Path(maze)
+        visited = set([start_path.last.position])
+        leaves = SortedSet([start_path], key=lambda path: path.score)
+        while len(leaves) > 0:
+            if verbose:
+                print(
+                    f"visited: {len(visited):>10}, score: {score:>10}, num_leaves: {len(leaves)}"
+                    + " " * 20,
+                    end="\r",
+                )
+            path = leaves.pop(0)
+            if path.at_end:
+                if best is None:
+                    best = path
+                else:
+                    if path.score < best.score:
+                        best = path
+                continue
+            # skip all children if score is too high
+            if best is not None and path.score > best.score:
+                continue
+            for heading in Heading:
+                target = path.last.position + heading.value
+                if target in visited:
+                    continue
+                if maze[target] == Tile.WALL or target in path.locations:
+                    continue
+                new_leaf = Path(maze, path.reindeers + (Reindeer(target, heading),))
+                visited.add(target)
+                leaves.add(new_leaf)
+        if verbose:
+            print(f"Complete - score = {score}" + " " * 20)
+        return best
 
 
 def load_input() -> str:
@@ -181,11 +222,10 @@ def load_input() -> str:
         return f.read().strip()
 
 
-def part_one(maze: Maze) -> int:
-    best = min(Path.all_paths(maze), key=lambda path: path.score)
-    return best.score
+def part_one(maze: Maze, verbose=False) -> int:
+    return Path.best_path(maze, verbose=verbose).score
 
 
 if __name__ == "__main__":
     maze = Maze(load_input())
-    print(f"part one: {part_one(maze)}")
+    print(f"part one: {part_one(maze, verbose=True)}")
