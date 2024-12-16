@@ -2,6 +2,7 @@ from day16 import (
     Maze,
     Path,
     part_one,
+    part_two,
 )
 
 
@@ -20,6 +21,13 @@ test_input = """###############
 #.###.#.#.#.#.#
 #S..#.....#...#
 ###############"""
+
+maze = Maze(test_input)
+best_paths = Path.best_paths(maze)
+for path in best_paths:
+    print(f"score = {path.score}")
+    print(path)
+
 
 test_input_2 = """#################
 #...#...#...#..E#
@@ -40,19 +48,15 @@ test_input_2 = """#################
 #################"""
 
 
-maze = Maze(test_input)
-paths = list(Path.all_paths(maze))
-best = min(paths, key=lambda path: path.score)
-print(f"score = {best.score}")
-print(best)
-print()
-print(Path.best_path(maze))
+maze = Maze(test_input_2)
+best_paths = Path.best_paths(maze)
+for path in best_paths:
+    print(f"score = {path.score}")
+    print(path)
 
-best = min(Path.all_paths(Maze(test_input_2)), key=lambda path: path.score)
-print(f"score = {best.score}")
-print(best)
-print()
-print(Path.best_path(Maze(test_input_2)))
 
 part_one(Maze(test_input))
 part_one(Maze(test_input_2))
+
+part_two(Maze(test_input))
+part_two(Maze(test_input_2))

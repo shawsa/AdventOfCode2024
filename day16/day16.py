@@ -1,3 +1,4 @@
+from collections import defaultdict
 from dataclasses import dataclass
 from enum import Enum, StrEnum
 from itertools import pairwise
@@ -51,6 +52,9 @@ class Heading(Enum):
 class Reindeer:
     position: Vector
     heading: Vector
+
+    def __hash__(self) -> int:
+        return hash((self.position, self.heading))
 
 
 class Tile(StrEnum):
@@ -179,42 +183,40 @@ class Path:
                 leaves.append(Path(maze, path.reindeers + (Reindeer(target, heading),)))
 
     @classmethod
-    def best_path(cls, maze: Maze, verbose: bool = False) -> Path:
+    def best_paths(cls, maze: Maze) -> list[Path]:
+        ret = []
         best = None
-        score = float("inf")
         start_path = Path(maze)
-        visited = set([start_path.last.position])
+        shortest_paths = defaultdict(lambda: float("inf"))
         leaves = SortedSet([start_path], key=lambda path: path.score)
         while len(leaves) > 0:
-            if verbose:
-                print(
-                    f"visited: {len(visited):>10}, score: {score:>10}, num_leaves: {len(leaves)}"
-                    + " " * 20,
-                    end="\r",
-                )
             path = leaves.pop(0)
             if path.at_end:
                 if best is None:
                     best = path
+                    ret = [best]
                 else:
+                    if path.score == best.score:
+                        ret.append(path)
                     if path.score < best.score:
                         best = path
+                        ret = [best]
                 continue
             # skip all children if score is too high
             if best is not None and path.score > best.score:
                 continue
             for heading in Heading:
                 target = path.last.position + heading.value
-                if target in visited:
+                if maze[target] == Tile.WALL:
                     continue
-                if maze[target] == Tile.WALL or target in path.locations:
+                new_deer = Reindeer(target, heading)
+                new_leaf = Path(maze, path.reindeers + (new_deer,))
+                if shortest_paths[new_deer] < new_leaf.score:
                     continue
-                new_leaf = Path(maze, path.reindeers + (Reindeer(target, heading),))
-                visited.add(target)
+                else:
+                    shortest_paths[new_deer] = new_leaf.score
                 leaves.add(new_leaf)
-        if verbose:
-            print(f"Complete - score = {score}" + " " * 20)
-        return best
+        return ret
 
 
 def load_input() -> str:
@@ -222,10 +224,20 @@ def load_input() -> str:
         return f.read().strip()
 
 
-def part_one(maze: Maze, verbose=False) -> int:
-    return Path.best_path(maze, verbose=verbose).score
+def part_one(maze: Maze) -> int:
+    return Path.best_paths(maze)[0].score
+
+
+def part_two(maze: Maze) -> int:
+    best_paths = Path.best_paths(maze)
+    locs = set()
+    for path in best_paths:
+        for deer in path.reindeers:
+            locs.add(deer.position)
+    return len(locs)
 
 
 if __name__ == "__main__":
     maze = Maze(load_input())
-    print(f"part one: {part_one(maze, verbose=True)}")
+    print(f"part one: {part_one(maze)}")
+    print(f"part two: {part_two(maze)}")
