@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from enum import Enum
+from more_itertools import chunked
 from typing import Callable, Generator
 
 
@@ -179,3 +180,69 @@ def run_program(initial_state: State, program: Program) -> str:
     for state in generate_state_sequence(initial_state, program):
         pass
     return ",".join(map(str, state.output))
+
+
+def human_readable_instruction(line: int, program: Program) -> str:
+    opcode = Opcode(program[line])
+    operand = Operand(program[line + 1])
+    literal = str(operand.literal)
+    if operand.literal <= 3:
+        combo = str(operand.literal)
+    elif operand.literal == 4:
+        combo = "A"
+    elif operand.literal == 5:
+        combo = "B"
+    elif operand.literal == 6:
+        combo = "C"
+
+    if opcode == Opcode.ADV:
+        return (
+            f"{line:>3}| {opcode}, on {literal}".ljust(30) + f"A <- A // (2**{combo})"
+        )
+    elif opcode == Opcode.BXL:
+        return f"{line:>3}| {opcode}, on {literal}".ljust(30) + f"B <- B XOR {literal}"
+    elif opcode == Opcode.BST:
+        return f"{line:>3}| {opcode}, on {literal}".ljust(30) + f"B <- {combo}%8"
+    elif opcode == Opcode.JNZ:
+        return (
+            f"{line:>3}| {opcode}, on {literal}".ljust(30) + f"if A != 0 JUMP {literal}"
+        )
+    elif opcode == Opcode.BXC:
+        return f"{line:>3}| {opcode}, on {literal}".ljust(30) + "B <- B XOR C"
+    elif opcode == Opcode.OUT:
+        return f"{line:>3}| {opcode}, on {literal}".ljust(30) + f"OUTPUT {combo}%8"
+    elif opcode == Opcode.BDV:
+        return (
+            f"{line:>3}| {opcode}, on {literal}".ljust(30) + f"B <- A // (2**{combo})"
+        )
+    elif opcode == Opcode.CDV:
+        return (
+            f"{line:>3}| {opcode}, on {literal}".ljust(30) + f"C <- A // (2**{combo})"
+        )
+    else:
+        raise ValueError(f"{opcode} is not an Opcode")
+
+
+def human_readable_sequence(program: Program) -> Generator[str, None, None]:
+    assert len(program) % 2 == 0
+    for half_line, (op_int, arg_int) in enumerate(chunked(program, 2)):
+        line = str(half_line * 2)
+        yield human_readable_instruction(line, program)
+
+
+def assemble(program: Program) -> str:
+    instructions = []
+    for line in range(0, len(program), 2):
+        instructions.append(human_readable_instruction(line, program))
+    return "\n".join(instructions)
+
+
+def debug(initial_state: State, program: Program) -> None:
+    """Print the state followed by the instruction."""
+    state_seq = generate_state_sequence(initial_state, program)
+    state = next(state_seq)
+    print(state)
+    for new_state in state_seq:
+        print(human_readable_instruction(state.counter, program))
+        state = new_state
+        print(state)
