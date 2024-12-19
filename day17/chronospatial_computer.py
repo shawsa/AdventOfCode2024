@@ -235,14 +235,3 @@ def assemble(program: Program) -> str:
     for line in range(0, len(program), 2):
         instructions.append(human_readable_instruction(line, program))
     return "\n".join(instructions)
-
-
-def debug(initial_state: State, program: Program) -> None:
-    """Print the state followed by the instruction."""
-    state_seq = generate_state_sequence(initial_state, program)
-    state = next(state_seq)
-    print(state)
-    for new_state in state_seq:
-        print(human_readable_instruction(state.counter, program))
-        state = new_state
-        print(state)

@@ -1,13 +1,16 @@
-from day17 import (
+from chronospatial_computer import (
     State,
     run_program,
     generate_state_sequence,
 )
 
-INITIAL_STATE = State(counter=0, A=41644071, B=0, C=0, output=[])
+from debugging import debug
 
-PROGRAM_STR = "2,4,1,2,7,5,1,7,4,4,0,3,5,5,3,0"
-PROGRAM = list(map(int, PROGRAM_STR.split(",")))
+from typing import Generator
+
+
+def state_from_A(A: int) -> State:
+    return State(counter=0, A=A, B=0, C=0, output=[])
 
 
 def my_program(A: int) -> list[int]:
@@ -49,6 +52,7 @@ def next_B(A):
     C = A // (2**B)  # in practice, C can be 3 bit
     B = B ^ 7
     B = B ^ C
+    # B = B & C
     return B
 
 
@@ -70,33 +74,42 @@ def same_program(A: int) -> list[int]:
     return output
 
 
-def all_possible_previous_A(A):
-    higher_bits = A // 2**10
-    for A_shift10 in range(2**10):
-        new_A = higher_bits * 2**10 + A_shift10
-        if new_A <= A:
+def possible_previous_As(A: int, out: int) -> Generator[int, 0, 0]:
+    for A8 in range(8):
+        prev_A = A * 8 + A8
+        if prev_A == A:
             continue
-        yield new_A
+        new_A, new_B = next_AB(prev_A)
+        if new_A == A and (new_B % 8) == out:
+            yield prev_A
 
 
-def generate_A(program):
-    def recur(A, prog_A):
-        print(A)
-        if prog_A == program:
+def generate_A(output: list[int]) -> int:
+    def recur(A):
+        A_out = my_program(A)
+        if A_out == output:
             yield A
-        if len(prog_A) < len(program):
-            for prev_A in all_possible_previous_A(A):
-                new_prog = same_program(prev_A)
-                print(new_prog)
-                if new_prog == program[-len(new_prog) :]:
-                    yield from recur(prev_A, new_prog)
+        if len(A_out) >= len(output):
+            return None
+        truncated_output = output[-len(A_out) :]
+        if A_out != truncated_output:
+            return None
+        next_output = output[-len(A_out) - 1]
+        for possible_A in possible_previous_As(A, next_output):
+            yield from recur(possible_A)
 
-    for A, prog in recur(0, []):
-        yield A
+    return next(recur(5))
 
 
-list(map(int, run_program(INITIAL_STATE, PROGRAM).split(",")))
-my_program(INITIAL_STATE.A)
-same_program(INITIAL_STATE.A)
+if __name__ == "__main__":
+    INITIAL_STATE = state_from_A(41644071)
+    PROGRAM_STR = "2,4,1,2,7,5,1,7,4,4,0,3,5,5,3,0"
+    PROGRAM = list(map(int, PROGRAM_STR.split(",")))
+    debug(INITIAL_STATE, PROGRAM, binary=True)
 
-next(generate_A(PROGRAM))
+    list(map(int, run_program(INITIAL_STATE, PROGRAM).split(",")))
+    my_program(INITIAL_STATE.A)
+    same_program(INITIAL_STATE.A)
+
+    A = generate_A(PROGRAM)
+    print(f"{A=}")
