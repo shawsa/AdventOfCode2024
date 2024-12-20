@@ -1,5 +1,5 @@
 from parsy import string, eof, generate
-from towels import Towel, TowelSet, Design, Stripe
+from towels import Towel, Design, Stripe
 
 
 white = string("w")
@@ -29,4 +29,4 @@ def parse_input(input_string: str):
     ts, ds = input_parser.parse(input_string)
     towels = [Towel(tuple(Stripe(s) for s in t)) for t in ts]
     designs = [Design(tuple(Stripe(s) for s in d)) for d in ds]
-    return TowelSet(towels), designs
+    return towels, designs
