@@ -39,5 +39,10 @@ class SecretNumber:
             num = num.next_number()
 
 
-def get_2000th(value: int) -> SecretNumber:
-    return nth(SecretNumber(value).sequence(), 2000)
+def secrets(initial_value: int) -> Generator[int, None, None]:
+    for num in SecretNumber(initial_value).sequence():
+        yield num.value
+
+
+def get_2000th(inital_value: int) -> int:
+    return nth(secrets(inital_value), 2000)
