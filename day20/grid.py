@@ -241,19 +241,16 @@ class Path:
             lines.append("".join(chars))
         return "\n".join(lines)
 
-    def find_cheats(self) -> Generator[Cheat, None, None]:
+    def find_cheats(self, max_len: int) -> Generator[Cheat, None, None]:
         for (index1, loc1), (index2, loc2) in combinations(
             enumerate(self.locations), 2
         ):
-            if (loc1 - loc2).l1 != 2:
+            cheat_time = (loc1 - loc2).l1
+            if cheat_time > max_len:
                 continue
             if index1 > index2:
                 index1, loc1, index2, loc2 = index2, loc2, index1, loc1
-            midpoint = Vector(
-                (loc1.row + loc2.row) // 2,
-                (loc1.col + loc2.col) // 2,
-            )
-            if self.grid[midpoint] != Tile.WALL:
+            time = index2 - index1 - cheat_time
+            if time <= 0:
                 continue
-            time = index2 - index1 - 2
             yield Cheat(loc1, loc2, time)
